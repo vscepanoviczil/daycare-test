@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset name="ZilkerPHPCS">
+    <description>Zilker Technology PHPCS Coding Standard</description>
+    <exclude-pattern>vendor</exclude-pattern>
+    <!-- Include Magento 2 Coding Standard -->
+    <rule ref="Magento2"/>
+    <!-- Include select rules from slevomat/coding-standard -->
+    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+        <properties>
+            <property name="spacesCountAroundEqualsSign" value="0"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.TypeHints.TypeHintDeclaration"/>
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing"/>
+    <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing"/>
+</ruleset>

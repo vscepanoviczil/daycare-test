@@ -1,0 +1,93 @@
+parameters:
+    git_dir: .
+    magento_dir: .
+    bin_dir: '%magento_dir%/vendor/bin'
+    hooks_dir: '%magento_dir%/docker/ztech/code-quality/grumphp/git-hook-templates/'
+    trunk_names: Dev|master|integration|production|staging|staging2
+    non_release_branch_prefixes: (feature|hotfix|bug)
+    jira_ticket_pattern: WMM-([0-9]*).+
+    release_branch: release\/.+
+    project_branch_naming_conventions: '/%trunk_names%|%non_release_branch_prefixes%\/%jira_ticket_pattern%|%release_branch%/'
+    hide_circumvention_tip: true
+    additional_info: "\nWhen in doubt, read the documentation!!!\n"
+    process_timeout: 600
+    ascii:
+        failed:
+            - grumphp-grumpy.txt
+            - nopecat.txt
+        succeeded:
+            - grumphp-happy.txt
+            - me-gusta.txt
+    tasks:
+        composer:
+            file: '%magento_dir%/composer.json'
+            no_check_all: true
+            no_check_lock: true
+            no_check_publish: false
+            with_dependencies: false
+            strict: false
+        git_blacklist:
+            keywords:
+                - "die("
+                - "var_dump("
+                - "exit;"
+                - "console.log("
+                - "<<<<<<<"
+                - "======="
+            triggered_by: ['php', 'phtml', 'js']
+#        git_branch_name:
+#            whitelist:
+#                - '%project_branch_naming_conventions%'
+        git_commit_message:
+            matchers:
+                Must contain JIRA issue number: '/%jira_ticket_pattern%/'
+        xmllint:
+            ignore_patterns: ['/^(?!app\/code\/|app\/design\/).+/']
+        yamllint:
+            ignore_patterns: ['./dev']
+        phplint:
+            exclude: []
+            jobs: ~
+            ignore_patterns: []
+            triggered_by: ['php', 'phtml']
+        phpcpd:
+            directory: '.'
+            names_exclude: ['index.php', 'magento-vars.php']
+            # The following regex pattern ignores all directories that don't start with "app/code/" or "app/design/"
+            # Also ignores module's Test directory
+            regexps_exclude: ['/^(?!app\/code\/|app\/design\/).+/','/Test/','/Moneris/', 'IIB/']
+            fuzzy: false
+            min_lines: 13
+            min_tokens: 70
+            triggered_by: ['php','phtml']
+        phpcs:
+            standard: ['ZilkerPHPCS']
+            severity: ~
+            error_severity: ~
+            tab_width: ~
+            report: 'full,summary,gitblame'
+            report_width: 120
+            # The following regex pattern only matches directories starting with "app/code/" or "app/design/"
+            whitelist_patterns:
+                - /^app\/code\/(.*)/
+                - /^app\/design\/(.*)/
+            encoding: ~
+            ignore_patterns: []
+            sniffs: []
+            triggered_by: ['php', 'phtml']
+        phpmd:
+            # Only check within app/code or app/design
+            whitelist_patterns:
+                - /^app\/code\/(.*)/
+                - /^app\/design\/(.*)/
+
+            exclude: []
+            ruleset: ['%magento_dir%/dev/tests/static/testsuite/Magento/Test/Php/_files/phpmd/ruleset.xml']
+            triggered_by: ['php','phtml']
+
+        securitychecker:
+            lockfile: '%magento_dir%/composer.lock'
+            format: ~
+            end_point: ~
+            timeout: ~
+            run_always: true

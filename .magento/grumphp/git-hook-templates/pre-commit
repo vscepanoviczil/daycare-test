@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Run the hook command.
+# Note: this will be replaced by the real command during copy.
+
+# Fetch the GIT diff and format it as command input:
+STAGED_FILES=$(git -c diff.mnemonicprefix=false --no-pager diff -r -p -m -M --full-index --no-color --staged --name-only '*.php' '*.phtml')
+DIFF=$(git -c diff.mnemonicprefix=false --no-pager diff -r -p -m -M --full-index --no-color --staged '*.php' '*.phtml'| cat)
+
+# Check if we're on a host system or within a Docker container
+if ! [ -x "$(command -v php)" ];then
+    echo "\e[33mZilker coding standards will check the following files...\e[0m"
+    echo $FILES
+    # Grumphp uses the $DIFF value to pipe into the vendor/bin/grumphp git:${HOOK_COMMAND} ( git:pre-commit, git:commit-mesg, etc ).
+    # This is meant to allow for grumphp's git hooks to receive info about the git diff for both `git commit -m` and `git commit -am`
+    #
+    # The problem is that Docker isn't officially supported yet ( https://github.com/phpro/grumphp/pull/618 )
+    # 
+    # In order to get around this, there's more manual steps required to make Grumphp do what we want it to do.
+    # This executes the Grumphp git:pre-commit command as intended by the Grumphp author.
+    #
+    # I wrapped this logic within an if condition, so that it could still be ran from a host system or within the docker container, if desired.
+    #
+    # NOTE: The default Grumphp git hooks that ship with the package can be found in vendor/phpro/grumphp/resources/hooks/local
+   
+    (cd "./" && echo "${DIFF}" | \
+	    exec 'docker' 'run' '--rm' '-t' "--volume=$PWD:/app" \
+	    '--env' 'ENABLE_SENDMAIL=false' '--env' 'PHP_ENABLE_XDEBUG=false' \
+	    'magento/magento-cloud-docker-php:7.3-cli' \
+	    'vendor/bin/grumphp' 'git:pre-commit' '--skip-success-output'
+    )
+else
+    echo "\e[33mZilker coding standards will check the following files...\e[0m"
+    echo "${STAGED_FILES}"
+    (cd "./" && echo "${DIFF}" | exec 'vendor/bin/grumphp' 'git:pre-commit' '--skip-success-output')
